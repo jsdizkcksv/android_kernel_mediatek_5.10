@@ -179,6 +179,37 @@ config SCSI_UFS_BSG
 config SCSI_UFS_EXYNOS
 	tristate "EXYNOS specific hooks to UFS controller platform driver"
 	depends on SCSI_UFSHCD_PLATFORM && (ARCH_EXYNOS || COMPILE_TEST)
+config SCSI_UFS_FEATURE
+	bool "UFS feature activate"
+	depends on SCSI_UFSHCD
+	---help---
+	UFS feature activate such as hpb, tw and etc.
+
+config SCSI_UFS_HPB
+	bool "UFS Host Performance Booster support"
+	depends on SCSI_UFSHCD && SCSI_UFS_FEATURE
+	---help---
+	UFS HPB Feature Enable
+
+config SCSI_UFS_TW
+	bool "UFS Turbo Write support"
+	depends on SCSI_UFSHCD && SCSI_UFS_FEATURE
+	---help---
+	UFS TW Feature Enable
+
+config SCSI_UFS_TW_IGNORE_GUARANTEE_BIT
+	bool "Ignore UFS Turbo Write Life Time Guarantee bit for POC"
+	default n
+	depends on SCSI_UFSHCD && SCSI_UFS_FEATURE && SCSI_UFS_TW
+	help
+	  If device not guarantee the lifetime of Turbo Write Buffer
+	  we will Ignore the guarantee bit[31] of dTurboWriteBufferLifeTimeEst for PoC.
+	  If device not guarantee the lifetime of Turbo Write Buffer and not ignore the bit
+	  So tw_mode change to disable_mode.
+
+config SCSI_SKHPB
+	bool "Activate HPB Host-aware Performance Booster"
+	depends on SCSI_UFSHCD
 	help
 	  This selects the EXYNOS specific additions to UFSHCD platform driver.
 	  UFS host on EXYNOS includes HCI and UNIPRO layer, and associates with
@@ -186,6 +217,12 @@ config SCSI_UFS_EXYNOS
 
 	  Select this if you have UFS host controller on EXYNOS chipset.
 	  If unsure, say N.
+
+config UFS_CHECK
+	bool "Activate WB&HPB provision check"
+	depends on SCSI_UFSHCD && FACTORY_BUILD
+	help
+	  Activate or deactive WB&HPB provision check
 
 config SCSI_UFS_CRYPTO
 	bool "UFS Crypto Engine Support"

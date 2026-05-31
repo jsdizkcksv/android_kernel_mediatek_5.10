@@ -495,6 +495,14 @@ struct ufs_stats {
 
 	u32 hibern8_exit_cnt;
 	ktime_t last_hibern8_exit_tstamp;
+
+    u32 pa_err_cnt_total;
+    u32 pa_err_cnt[UFS_EC_PA_MAX];
+    u32 dl_err_cnt_total;
+    u32 dl_err_cnt[UFS_EC_DL_MAX];
+    u32 dme_err_cnt;
+    u32 power_mode_change_cnt;
+
 	struct ufs_event_hist event[UFS_EVT_CNT];
 };
 
@@ -1419,4 +1427,15 @@ int ufshcd_dump_regs(struct ufs_hba *hba, size_t offset, size_t len,
 		     const char *prefix);
 int ufshcd_uic_hibern8_enter(struct ufs_hba *hba);
 int ufshcd_uic_hibern8_exit(struct ufs_hba *hba);
+
+int ufshcd_query_flag_sel(struct ufs_hba *hba, enum query_opcode opcode,
+		enum flag_idn idn, u8 index, u8 selector, bool *flag_res);
+
+int ufshcd_read_desc_param_sel(struct ufs_hba *hba,\
+		enum desc_idn desc_id,
+		int desc_index,
+		u8 selector,
+		u8 param_offset,
+		u8 *param_read_buf,
+		u8 param_size);
 #endif /* End of Header */
