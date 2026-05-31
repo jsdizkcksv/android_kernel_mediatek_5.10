@@ -1664,6 +1664,7 @@ static void spi_set_thread_rt(struct spi_controller *ctlr)
 		"will run message pump with realtime priority\n");
 	sched_set_fifo(ctlr->kworker->task);
 }
+	struct sched_param param = { .sched_priority = 48 };
 
 static int spi_init_queue(struct spi_controller *ctlr)
 {
