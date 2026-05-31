@@ -123,6 +123,17 @@ obj-$(CONFIG_MTK_PUMP_EXPRESS_40_SUPPORT) += mtk_pep40.o
 mtk_pep40-objs := mtk_pe4.o mtk_pe4_hal.o
 obj-$(CONFIG_MTK_PUMP_EXPRESS_50_SUPPORT) += mtk_pep50.o
 mtk_pep50-objs := mtk_pe5.o mtk_pe5_hal.o
+obj-$(CONFIG_AGATE_CHARGER)	+= pmic-voter.o
+obj-$(CONFIG_AGATE_CHARGER) 	+= battery.o
+obj-$(CONFIG_PISSARRO_CHARGER)	+= pmic_voter.o
+
+ifeq ($(CONFIG_MACH_MT8173),y)
+else
+	obj-y += mediatek/
+ifeq ($(CONFIG_AGATE_CHARGER),y)
+	obj-y += ti_agate/
+endif
+endif
 
 ifneq ($(wildcard $(srctree)/$(src)/k6983v1_64_alpha),)
 obj-$(CONFIG_GAUGE_MT6983_ALPHA_SUPPORT) += k6983v1_64_alpha/
