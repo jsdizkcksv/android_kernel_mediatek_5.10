@@ -313,6 +313,7 @@ static int fuse_dentry_revalidate(struct dentry *entry, unsigned int flags)
 		}
 		kfree(forget);
 		if (ret == -ENOMEM || ret == -EINTR)
+		if ((ret == -ENOMEM) || (ret == -EINTR))
 			goto out;
 		if (ret || fuse_invalid_attr(&outarg.attr) ||
 		    fuse_stale_inode(inode, outarg.generation, &outarg.attr))

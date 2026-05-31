@@ -137,3 +137,7 @@ obj-$(CONFIG_EFIVAR_FS)		+= efivarfs/
 obj-$(CONFIG_EROFS_FS)		+= erofs/
 obj-$(CONFIG_VBOXSF_FS)		+= vboxsf/
 obj-$(CONFIG_ZONEFS_FS)		+= zonefs/
+
+# HONGMI-163266 add support exfat by guochengqian at 20230112 start
+obj-$(CONFIG_EXFAT_FS)		+= exfat/
+# HONGMI-163266 add support exfat by guochengqian at 20230112 end

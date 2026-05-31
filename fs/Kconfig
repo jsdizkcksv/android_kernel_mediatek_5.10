@@ -42,6 +42,10 @@ source "fs/nilfs2/Kconfig"
 source "fs/f2fs/Kconfig"
 source "fs/zonefs/Kconfig"
 
+# HONGMI-163266 add support exfat by guochengqian at 20230112 start
+source "fs/exfat/Kconfig"
+# HONGMI-163266 add support exfat by guochengqian at 20230112 end
+
 config FS_DAX
 	bool "Direct Access (DAX) support"
 	depends on MMU
