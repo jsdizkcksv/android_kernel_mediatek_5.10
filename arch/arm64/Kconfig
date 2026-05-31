@@ -2045,6 +2045,10 @@ config DMI
 	  However, even with this option, the resultant kernel should
 	  continue to boot on existing non-UEFI platforms.
 
+config BUILD_XIAOMI_CAMERA_IMAGE_NAMES
+        string "To distinguish different project name"
+        help
+          For Camera to distinguish project names.
 endmenu
 
 config SYSVIPC_COMPAT
