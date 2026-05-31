@@ -79,6 +79,7 @@ obj-$(CONFIG_MTK_USB_CONFIGFS_RNDIS) += usb_rndis/
 obj-$(CONFIG_MTK_SCHEDULER) += sched/
 obj-$(CONFIG_MTK_AMMS) += memory-amms/
 obj-$(CONFIG_MTK_SDA) += sda/
+obj-$(CONFIG_MTK_ULTRASND_PROXIMITY) += elliptic/
 obj-$(CONFIG_MTK_MDDP_SUPPORT) += mddp/
 obj-$(CONFIG_MTK_TINYSYS_SCP_SUPPORT) += scp/
 obj-$(CONFIG_MTK_TINYSYS_VCP_SUPPORT) += vcp/
@@ -101,3 +102,7 @@ obj-$(CONFIG_MTK_GATE_IC) += gate_ic/
 obj-$(CONFIG_MTK_WIDEVINE_DRM) += widevine_drm/
 obj-$(CONFIG_INTERCONNECT_MTK_MMQOS_COMMON) += mmqos/
 obj-$(CONFIG_MTK_TIMER_ACCURACY_TEST) += timer/
+obj-$(CONFIG_AW862xx_HAPTIC) += aw862xx_haptic/
+subdir-ccflags-y += -D_XIAOMI_
+subdir-ccflags-y += -D_XIAOMI_AGATE_
+
