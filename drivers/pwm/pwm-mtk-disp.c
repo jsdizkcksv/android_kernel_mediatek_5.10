@@ -185,6 +185,7 @@ static int mtk_disp_pwm_probe(struct platform_device *pdev)
 	int ret;
 
 	pr_notice("%s start", __func__);
+	pr_notice("%s start\n", __func__);
 	mdp = devm_kzalloc(&pdev->dev, sizeof(*mdp), GFP_KERNEL);
 	if (!mdp)
 		return -ENOMEM;
@@ -243,6 +244,7 @@ static int mtk_disp_pwm_probe(struct platform_device *pdev)
 					 mdp->data->con0_sel,
 					 mdp->data->con0_sel);
 	}
+	pr_notice("%s end\n", __func__);
 
 	pr_notice("%s end", __func__);
 	return 0;
