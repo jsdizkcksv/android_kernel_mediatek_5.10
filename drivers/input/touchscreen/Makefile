@@ -116,6 +116,12 @@ obj-$(CONFIG_TOUCHSCREEN_MTK_TUI_COMMON_API) +=tui-common.o
 TOUCH_LISTS := $(subst ",,$(CONFIG_TOUCHSCREEN_MTK_TOUCH))
 obj-y += $(foreach TOUCH,$(TOUCH_LISTS),$(TOUCH)/)
 
+# Xiaomi / AGATE touch drivers, ported from the 4.19 vendor tree
+obj-$(CONFIG_TOUCHSCREEN_FOCALTECH) += focaltech_spi/
+obj-$(CONFIG_TOUCHSCREEN_XIAOMI_TOUCHFEATURE) += xiaomi/
+obj-$(CONFIG_TOUCHSCREEN_ST_FTS_V521_SPI) += fts_spi/
+obj-y += double_click.o
+
 ifneq ($(wildcard $(srctree)/$(src)/k6983v1_64_alpha),)
 obj-$(CONFIG_TOUCHSCREEN_MT6983_ALPHA_SUPPORT) += k6983v1_64_alpha/
 endif
