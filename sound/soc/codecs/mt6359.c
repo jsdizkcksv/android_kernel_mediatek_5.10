@@ -35,6 +35,56 @@ static ssize_t mt6359_codec_sysfs_write(struct file *filp, struct kobject *kobj,
 					struct bin_attribute *bin_attr,
 					char *buf, loff_t off, size_t count);
 
+struct mt6359_priv {
+	struct device *dev;
+	struct regmap *regmap;
+	struct iio_channel *codec_auxadc, *accdet_auxadc;
+	struct nvmem_device *hp_efuse;
+
+	unsigned int dl_rate[MT6359_AIF_NUM];
+	unsigned int ul_rate[MT6359_AIF_NUM];
+
+	int ana_gain[AUDIO_ANALOG_VOLUME_TYPE_MAX];
+	unsigned int mux_select[MUX_NUM];
+	int dmic_one_wire_mode;
+
+	int dev_counter[DEVICE_NUM];
+
+	int hp_gain_ctl;
+	int hp_hifi_mode;
+	int hp_pull_low_off;
+
+	struct mt6359_codec_ops ops;
+	struct dc_trim_data dc_trim;
+	struct hp_trim_data hp_trim_3_pole;
+	struct hp_trim_data hp_trim_4_pole;
+	int hp_plugged;
+
+	/* hp impedance */
+	int hp_impedance;
+	int hp_current_calibrate_val;
+
+	int mtkaif_protocol;
+
+	struct regulator *avdd_reg;
+	struct dentry *debugfs;
+	unsigned int debug_flag;
+
+	/* vow control */
+	int vow_enable;
+	int reg_afe_vow_vad_cfg0;
+	int reg_afe_vow_vad_cfg1;
+	int reg_afe_vow_vad_cfg2;
+	int reg_afe_vow_vad_cfg3;
+	int reg_afe_vow_vad_cfg4;
+	int reg_afe_vow_vad_cfg5;
+	int reg_afe_vow_periodic;
+	unsigned int vow_channel;
+	struct mt6359_vow_periodic_on_off_data vow_periodic_param;
+	/* vow dmic low power mode, 1: enable, 0: disable */
+	int vow_dmic_lp;
+	int vow_single_mic_select;
+};
 
 /* static function declaration */
 static void mt6359_set_gpio_smt(struct mt6359_priv *priv)
@@ -317,6 +367,41 @@ static const char *const hp_dl_pga_gain[] = {
 static void zcd_disable(struct mt6359_priv *priv)
 {
 	regmap_write(priv->regmap, MT6359_ZCD_CON0, 0x0000);
+	if (enable) {
+		switch (device) {
+		case DEVICE_RCV:
+			//regmap_update_bits(priv->regmap,
+			//		   MT6359_AUDDEC_ANA_CON11,
+			//		   0x7, 0x2);
+			break;
+		case DEVICE_LO:
+			regmap_update_bits(priv->regmap,
+					   MT6359_AUDDEC_ANA_CON11,
+					   0x7, 0x0);
+			break;
+		case DEVICE_HP:
+		default:
+			regmap_update_bits(priv->regmap,
+					   MT6359_AUDDEC_ANA_CON11,
+					   0x7, 0x1);
+			break;
+		}
+		/* Enable ZCD, for minimize pop noise */
+		/* timeout, 1 = 5ms, 0 = 30ms */
+		regmap_update_bits(priv->regmap, MT6359_ZCD_CON0,
+				   0x1 << 6, 0x0 << 6);
+		regmap_update_bits(priv->regmap, MT6359_ZCD_CON0,
+				   0x3 << 4, 0x0 << 4);
+		regmap_update_bits(priv->regmap, MT6359_ZCD_CON0,
+				   0x7 << 1, 0x5 << 1);
+//		gmap_update_bits(priv->regmap, MT6359_ZCD_CON0,
+//				 0x1 << 0, 0x1 << 0);
+	} else {
+		regmap_update_bits(priv->regmap, MT6359_AUDDEC_ANA_CON11,
+				   0x7, 0x4);
+		regmap_update_bits(priv->regmap, MT6359_ZCD_CON0,
+				   0xffff, 0x0000);
+	}
 }
 
 static void hp_main_output_ramp(struct mt6359_priv *priv, bool up)
@@ -1279,6 +1364,16 @@ static void mtk_hp_disable(struct mt6359_priv *priv)
 	/* Disable HP aux output stage */
 	regmap_update_bits(priv->regmap, MT6359_AUDDEC_ANA_CON1,
 			   0x3 << 2, 0x0);
+
+	/* Disable AUD_ZCD */
+	//zcd_enable(priv, false, DEVICE_HP);
+	if (priv->hp_pull_low_off) {
+		regmap_update_bits(priv->regmap, MT6359_AUDDEC_ANA_CON2,
+				RG_HPLOUTPUTSTBENH_VAUDP32_MASK_SFT, 0x0);
+		regmap_update_bits(priv->regmap, MT6359_AUDDEC_ANA_CON2,
+				RG_HPROUTPUTSTBENH_VAUDP32_MASK_SFT, 0x0);
+	}
+	return 0;
 }
 
 static int mtk_hp_impedance_enable(struct mt6359_priv *priv)
@@ -1324,8 +1419,7 @@ static int mtk_hp_impedance_disable(struct mt6359_priv *priv)
 	/* Disable Audio DAC */
 	regmap_update_bits(priv->regmap, MT6359_AUDDEC_ANA_CON0,
 			   0x000f, 0x0000);
-
-
+	if (!priv->hp_pull_low_off) {
 	/* Enable HPR/L STB enhance circuits for off state */
 	regmap_update_bits(priv->regmap, MT6359_AUDDEC_ANA_CON2,
 			   RG_HPROUTPUTSTBENH_VAUDP32_MASK_SFT,
@@ -1335,6 +1429,11 @@ static int mtk_hp_impedance_disable(struct mt6359_priv *priv)
 			   0x3 << RG_HPLOUTPUTSTBENH_VAUDP32_SFT);
 
 #if IS_ENABLED(CONFIG_SND_SOC_MT6359P_ACCDET)
+	}
+	/* Disable AUD_ZCD */
+	zcd_enable(priv, false, DEVICE_HP);
+
+#ifdef CONFIG_MTK_ACCDET
 	/* from accdet request */
 	accdet_modify_vref_volt();
 #endif
@@ -6501,6 +6600,11 @@ static int mt6359_platform_driver_probe(struct platform_device *pdev)
 	if (IS_ERR(priv->regmap))
 		return PTR_ERR(priv->regmap);
 
+	of_property_read_u32(pdev->dev.of_node,
+			"always_pull_low_off",
+			&priv->hp_pull_low_off);
+	dev_info(&pdev->dev, "%s(), hp_pull_low_off=%d\n",
+			__func__, priv->hp_pull_low_off);
 	dev_set_drvdata(&pdev->dev, priv);
 	priv->dev = &pdev->dev;
 
