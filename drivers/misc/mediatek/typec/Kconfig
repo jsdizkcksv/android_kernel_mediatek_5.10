@@ -15,3 +15,17 @@ source "drivers/misc/mediatek/typec/tcpc/Kconfig"
 
 source "drivers/misc/mediatek/typec/mux/Kconfig"
 
+config OCP96011_I2C
+	tristate "analog audio switch"
+	depends on I2C
+	help
+	  The OCP96011 is a high-performance USB Type-C port
+	  multimedia switch. The OCP96011 supports USB2.0
+	  signal, analog audio, sideband use wires and analog
+	  microphone signal.
+config AGATE_CHARGER
+	bool "MTK charger for AGATE"
+	help
+	  Say yes In MTK charger AGATE.
+source "drivers/misc/mediatek/typec/tcpc/Kconfig"
+source "drivers/misc/mediatek/typec/tcpc_agate/Kconfig"
