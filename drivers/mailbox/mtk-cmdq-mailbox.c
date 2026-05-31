@@ -334,6 +334,111 @@ static int cmdq_mbox_send_data(struct mbox_chan *chan, void *data)
 	struct cmdq *cmdq = dev_get_drvdata(chan->mbox->dev);
 	struct cmdq_task *task;
 	unsigned long curr_pa, end_pa;
+	struct cmdq_pkt_buffer *buf;
+
+	struct cmdq_pkt *pkt = NULL;
+	u32 warn_rst, en, suspend, status, irq, irq_en, curr_pa, end_pa, cnt,
+		wait_token, cfg, prefetch, pri = 0;
+	size_t size = 0;
+	u64 *end_va, *curr_va = NULL, inst = 0, last_inst[2] = {0};
+	void *va_base = NULL;
+	dma_addr_t pa_base;
+	bool empty = true;
+
+	/* lock channel and get info */
+	spin_lock_irqsave(&chan->lock, flags);
+
+	if (atomic_read(&cmdq->usage) <= 0) {
+		cmdq_err("%s gce off cmdq:%p thread:%u",
+			__func__, cmdq, thread->idx);
+		dump_stack();
+		spin_unlock_irqrestore(&chan->lock, flags);
+		return;
+	}
+
+	warn_rst = readl(thread->base + CMDQ_THR_WARM_RESET);
+	en = readl(thread->base + CMDQ_THR_ENABLE_TASK);
+	suspend = readl(thread->base + CMDQ_THR_SUSPEND_TASK);
+	status = readl(thread->base + CMDQ_THR_CURR_STATUS);
+	irq = readl(thread->base + CMDQ_THR_IRQ_STATUS);
+	irq_en = readl(thread->base + CMDQ_THR_IRQ_ENABLE);
+	curr_pa = cmdq_thread_get_pc(thread);
+	end_pa = cmdq_thread_get_end(thread);
+	cnt = readl(thread->base + CMDQ_THR_CNT);
+	wait_token = readl(thread->base + CMDQ_THR_WAIT_TOKEN);
+	cfg = readl(thread->base + CMDQ_THR_CFG);
+	prefetch = readl(thread->base + CMDQ_THR_PREFETCH);
+
+	list_for_each_entry(task, &thread->task_busy_list, list_entry) {
+		empty = false;
+
+		if (curr_pa == cmdq_task_get_end_pa(task->pkt))
+			curr_va = (u64 *)cmdq_task_get_end_va(task->pkt);
+		else
+			curr_va = (u64 *)cmdq_task_current_va(curr_pa,
+				task->pkt);
+		if (!curr_va)
+			continue;
+		inst = *curr_va;
+		pkt = task->pkt;
+		size = pkt->cmd_buf_size;
+		pri = pkt->priority;
+
+		buf = list_first_entry(&pkt->buf, typeof(*buf), list_entry);
+		va_base = buf->va_base;
+		pa_base = buf->pa_base;
+
+		buf = list_last_entry(&pkt->buf, typeof(*buf), list_entry);
+		end_va = (u64 *)(buf->va_base + CMDQ_CMD_BUFFER_SIZE -
+			pkt->avail_buf_size - CMDQ_INST_SIZE * 2);
+		last_inst[0] = *end_va;
+		last_inst[1] = *++end_va;
+		break;
+	}
+	spin_unlock_irqrestore(&chan->lock, flags);
+	cmdq_util_user_msg(chan,
+		"thd:%u pc:%#010x(%p) inst:%#018llx end:%#010x cnt:%#x token:%#010x",
+		thread->idx, curr_pa, curr_va, inst, end_pa, cnt, wait_token);
+	cmdq_util_user_msg(chan,
+		"rst:%#x en:%#x suspend:%#x status:%#x irq:%x en:%#x cfg:%#x",
+		warn_rst, en, suspend, status, irq, irq_en, cfg);
+	cmdq_thread_dump_spr(thread);
+
+	if (pkt) {
+		cmdq_util_user_msg(chan,
+			"cur pkt:0x%p size:%zu va:0x%p pa:%pa priority:%u",
+			pkt, size, va_base, &pa_base, pri);
+		cmdq_util_user_msg(chan, "last inst %#018llx %#018llx",
+			last_inst[0], last_inst[1]);
+
+		if (cl_pkt && cl_pkt != pkt) {
+			buf = list_first_entry(&cl_pkt->buf, typeof(*buf),
+				list_entry);
+			cmdq_util_user_msg(chan,
+				"expect pkt:0x%p size:%zu va:0x%p pa:%pa priority:%u",
+				cl_pkt, cl_pkt->cmd_buf_size, buf->va_base,
+				&buf->pa_base, cl_pkt->priority);
+
+			curr_va = NULL;
+			curr_pa = 0;
+		}
+	} else {
+		/* empty or not found case is critical */
+		cmdq_util_msg("pkt not available (%s)",
+			empty ? "thread empty" : "pc not match");
+	}
+
+/* if pc match end and irq flag on, dump irq status */
+	if (curr_pa == end_pa && irq)
+		cmdq_util_msg("gic dump not support irq id:%u\n",
+			cmdq->irq);
+
+	if (inst_out)
+		*inst_out = curr_va;
+	if (pc_out)
+		*pc_out = curr_pa;
+}
+EXPORT_SYMBOL(cmdq_thread_dump);
 
 	/* Client should not flush new tasks if suspended. */
 	WARN_ON(cmdq->suspended);
