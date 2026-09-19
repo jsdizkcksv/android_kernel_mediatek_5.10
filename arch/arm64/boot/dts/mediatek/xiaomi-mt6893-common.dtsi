@@ -797,5 +797,28 @@
 };
 /* Audio End */
 
-#include <k6893v1_64_k419/cust.dtsi>
+//ST NFC for Mediateckstart
+&i2c6 {
+    st21nfc@08 {
+      compatible = "mediatek,nfc";
+      reg = <0x08>;
+      gpio-irq = <11>;
+      gpio-irq-std = <&pio 11 0x00>;
+      interrupt-parent = <&pio>;
+      interrupts = <11 IRQ_TYPE_LEVEL_HIGH 11 0>;
+      gpio-rst = <10>;
+      gpio-rst-std = <&pio 10 0x0>;
+ //     st,clkreq_gpio = <&pio 25 0x0>;
+      interrupt-names = "nfc_irq";
+      pinctrl-names = "default", "nfc_active", "nfc_suspend";
+      pinctrl-0 = <&nfc_default>;
+      pinctrl-1 = <&nfc_int_active &nfc_enable_active>;
+ //       &nfc_clk_req_active>;
+      pinctrl-2 = <&nfc_int_suspend &nfc_enable_suspend>;
+//         &nfc_clk_req_suspend>;
+    };
+        
+};
+//NFC end 
+
 /*End of this file, DO NOT ADD ANYTHING HERE*/
