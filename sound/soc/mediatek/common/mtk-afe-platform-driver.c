@@ -114,8 +114,6 @@ snd_pcm_uframes_t mtk_afe_pcm_pointer(struct snd_soc_component *component,
 	unsigned int hw_ptr_msb = 0, hw_base_msb = 0;
 	u64 hw_ptr_64 = 0, hw_base_64 = 0;
 	int ret, pcm_ptr_bytes;
-	unsigned int hw_ptr_msb = 0, hw_base_msb = 0;
-	u64 hw_ptr_64 =0, hw_base_64 = 0;
 
 	ret = regmap_read(regmap, reg_ofs_cur, &hw_ptr);
 	if (ret) {
@@ -123,6 +121,7 @@ snd_pcm_uframes_t mtk_afe_pcm_pointer(struct snd_soc_component *component,
 		pcm_ptr_bytes = 0;
 		goto POINTER_RETURN_FRAMES;
 	}
+
 	ret = regmap_read(regmap, reg_ofs_cur_msb, &hw_ptr_msb);
 	if (ret || (hw_ptr == 0 && hw_ptr_msb == 0)) {
 		dev_err(dev, "%s hw_ptr err\n", __func__);
@@ -133,16 +132,13 @@ snd_pcm_uframes_t mtk_afe_pcm_pointer(struct snd_soc_component *component,
 	hw_ptr_64 <<= 32;
 	hw_ptr_64 |= hw_ptr;
 
-	hw_ptr_64 = hw_ptr_msb;
-	hw_ptr_64 <<= 32;
-	hw_ptr_64 |= hw_ptr;
-
 	ret = regmap_read(regmap, reg_ofs_base, &hw_base);
 	if (ret) {
 		dev_err(dev, "%s regmap_read hw_base err, ret = %d\n", __func__, ret);
 		pcm_ptr_bytes = 0;
 		goto POINTER_RETURN_FRAMES;
 	}
+
 	ret = regmap_read(regmap, reg_ofs_base_msb, &hw_base_msb);
 	if (ret || (hw_base == 0 && hw_base_msb == 0)) {
 		dev_err(dev, "%s hw_base err\n", __func__);
@@ -153,10 +149,6 @@ snd_pcm_uframes_t mtk_afe_pcm_pointer(struct snd_soc_component *component,
 	hw_base_64 <<= 32;
 	hw_base_64 |= hw_base;
 
-	hw_base_64 = hw_base_msb;
-	hw_base_64 <<= 32;
-	hw_base_64 |= hw_base;
-	//pcm_ptr_bytes = hw_ptr - hw_base;
 	pcm_ptr_bytes = hw_ptr_64 - hw_base_64;
 
 POINTER_RETURN_FRAMES:

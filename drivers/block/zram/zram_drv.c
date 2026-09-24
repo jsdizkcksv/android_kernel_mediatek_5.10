@@ -331,7 +331,6 @@ static ssize_t idle_store(struct device *dev,
 {
 	struct zram *zram = dev_to_zram(dev);
 	unsigned long nr_pages = zram->disksize >> PAGE_SHIFT;
-	int index;
 	int index, mark_nr = 0;
 
 	if (!sysfs_streq(buf, "all"))
@@ -746,8 +745,6 @@ static int read_from_bdev_async(struct zram *zram, struct bio_vec *bvec,
 #define PAGE_WRITEBACK 0
 #define HUGE_WRITEBACK 1
 #define IDLE_WRITEBACK 2
-#define HUGE_WRITEBACK (1<<0)
-#define IDLE_WRITEBACK (1<<1)
 
 /* Returns true on success, false on parsing error. */
 static bool writeback_parse_input(const char *buf,
@@ -804,10 +801,15 @@ static ssize_t writeback_store(struct device *dev,
 	ssize_t ret = len;
 	int mode, err;
 	unsigned long blk_idx = 0;
+	unsigned long wb_pages_nr = 0;
+	unsigned long wb_max = nr_pages;
+	unsigned int wb_idle_min = 0;
 
-	if (sysfs_streq(buf, "idle"))
+	if (sysfs_streq(buf, "idle") || !strncmp(buf, "idle ", 5)) {
 		mode = IDLE_WRITEBACK;
-	else if (sysfs_streq(buf, "huge"))
+		if (!writeback_parse_input(buf, &wb_max, &wb_idle_min))
+			return -EINVAL;
+	} else if (sysfs_streq(buf, "huge"))
 		mode = HUGE_WRITEBACK;
 	else {
 		if (strncmp(buf, PAGE_WB_SIG, sizeof(PAGE_WB_SIG) - 1))
@@ -1108,7 +1110,7 @@ static void free_pages_life(struct zram_pages_life *pl)
 	}
 }
 
-static struct zram_pages_life *init_pages_life()
+static struct zram_pages_life *init_pages_life(void)
 {
 	size_t i = 0;
 	struct zram_pages_life *pl = NULL;
@@ -1705,7 +1707,8 @@ static ssize_t avg_size_show(struct device *dev,
 		struct device_attribute *attr, char *buf)
 {
 	struct zram *zram = dev_to_zram(dev);
-	return scnprintf(buf, PAGE_SIZE, "%8llu\n", (u64)atomic_read(&zram->avg_size));
+	return scnprintf(buf, PAGE_SIZE, "%8llu\n",
+			(u64)atomic64_read(&zram->avg_size));
 }
 #endif
 

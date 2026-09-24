@@ -626,8 +626,6 @@ int mt6885_add_misc_control(struct snd_soc_component *component)
 					  mt6885_afe_barge_in_controls,
 					  ARRAY_SIZE(mt6885_afe_barge_in_controls));
 
-				       mt6885_afe_bargein_controls,
-				       ARRAY_SIZE(mt6885_afe_bargein_controls));
 	//for ellipitc mixer control
 #if defined(CONFIG_MTK_ULTRASND_PROXIMITY)
 	elliptic_add_platform_controls(component);
