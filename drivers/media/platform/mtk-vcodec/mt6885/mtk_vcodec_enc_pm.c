@@ -8,7 +8,7 @@
 #include <linux/of_platform.h>
 #include <linux/pm_runtime.h>
 #include <linux/delay.h>
-//#include <soc/mediatek/smi.h>
+//#include "smi_public.h"
 
 #include "mtk_vcodec_enc_pm.h"
 #include "mtk_vcodec_util.h"
